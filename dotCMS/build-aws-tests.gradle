@@ -452,6 +452,7 @@ task executeScript(dependsOn: [describeInstance, describeDBInstance]) {
 			"INT_TEST_PATTERN": project.intTestPattern
 		]
 
+		println( "Int Test Pattern: "+ project.intTestPattern)
 
 		// Create temporal script file with all variables interpolated
 		String instanceScriptFilePath = File.createTempFile('tempExecuteScript', '.sh').absolutePath
