@@ -7,7 +7,7 @@ trap 'echo "[$(date) $USER@$(hostname) $PWD]\$ $BASH_COMMAND"' DEBUG
 export GRADLE_OPTS="-Xmx1024m -Xms256m -XX:MaxPermSize=512m"
 
 
-echo "Building branch '$BRANCH' and testing against '$DB_TYPE' with build code '$BUILD_CODE' (provisioned is '$BUILD_PROVISIONED') and Integration test pattern $INT_TEST_NAME "
+echo "Building branch '$BRANCH' and testing against '$DB_TYPE' with build code '$BUILD_CODE' (provisioned is '$BUILD_PROVISIONED') and Integration test pattern '$INT_TEST_PATTERN' "
 
 
 # Create working directory
@@ -138,7 +138,7 @@ felix.base.dir=$PWD/dotserver/tomcat/webapps/ROOT/WEB-INF/felix
 mkdir tests
 mkdir tests/logs
 
-if [ ! -z "$INT_TEST_NAME" ]; then
+if [ ! -z "$INT_TEST_PATTERN" ]; then
 
 # Run Functional tests
 ant -f build-tests.xml test-dotcms
@@ -160,9 +160,9 @@ fi
 # Run Integration tests
 cd core/dotCMS
 
-if [ -z "$INT_TEST_NAME" ]; then
-      echo "Running integration tests with provided test pattern. $INT_TEST_NAME "
-      ./gradlew integrationTest --tests $INT_TEST_NAME -PdatabaseType=$DB_TYPE --no-daemon || true
+if [ -z "$INT_TEST_PATTERN" ]; then
+      echo "Running integration tests with provided test pattern. $INT_TEST_PATTERN"
+      ./gradlew integrationTest --tests $INT_TEST_PATTERN -PdatabaseType=$DB_TYPE --no-daemon || true
 else
       echo "Running all integration tests."
       ./gradlew integrationTest -PdatabaseType=$DB_TYPE --no-daemon || true
