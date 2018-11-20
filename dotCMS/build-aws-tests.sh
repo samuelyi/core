@@ -138,6 +138,8 @@ felix.base.dir=$PWD/dotserver/tomcat/webapps/ROOT/WEB-INF/felix
 mkdir tests
 mkdir tests/logs
 
+if [ ! -z "$INT_TEST_NAME" ]; then
+
 # Run Functional tests
 ant -f build-tests.xml test-dotcms
 if [ ! -d "dotserver/tomcat/webapps/ROOT/dotsecure/logs/test" ]; then
@@ -151,9 +153,20 @@ cp dotserver/tomcat/webapps/ROOT/dotsecure/logs/test/*.xml tests
 cp dotserver/tomcat/webapps/ROOT/dotsecure/logs/*.log tests/logs
 cp dotserver/tomcat/logs/* tests/logs
 
+fi
+
 # Run Integration tests
 cd core/dotCMS
-./gradlew integrationTest -PdatabaseType=$DB_TYPE --no-daemon || true
+
+if [ -z "$INT_TEST_NAME" ]; then
+      echo "Running integration tests with a provided test pattern."
+      ./gradlew integrationTest  --tests  $INT_TEST_NAME  -PdatabaseType=$DB_TYPE --no-daemon || true
+else
+      echo "Running all integration tests."
+      ./gradlew integrationTest -PdatabaseType=$DB_TYPE --no-daemon || true
+fi
+
+
 cd ../..
 cp core/dotCMS/build/test-results/integrationTest/*.xml tests
 
