@@ -7,7 +7,7 @@ trap 'echo "[$(date) $USER@$(hostname) $PWD]\$ $BASH_COMMAND"' DEBUG
 export GRADLE_OPTS="-Xmx1024m -Xms256m -XX:MaxPermSize=512m"
 
 
-echo "Building branch '$BRANCH' and testing against '$DB_TYPE' with build code '$BUILD_CODE' (provisioned is '$BUILD_PROVISIONED')"
+echo "Building branch '$BRANCH' and testing against '$DB_TYPE' with build code '$BUILD_CODE' (provisioned is '$BUILD_PROVISIONED') and Integration test pattern $INT_TEST_NAME "
 
 
 # Create working directory
@@ -146,6 +146,8 @@ if [ ! -d "dotserver/tomcat/webapps/ROOT/dotsecure/logs/test" ]; then
 	echo 'Functional tests could not be run'
 
 	exit 1;
+else
+   echo "Skipping functional tests."
 fi
 
 # Copy results and logs of tests
@@ -159,8 +161,8 @@ fi
 cd core/dotCMS
 
 if [ -z "$INT_TEST_NAME" ]; then
-      echo "Running integration tests with a provided test pattern."
-      ./gradlew integrationTest  --tests  $INT_TEST_NAME  -PdatabaseType=$DB_TYPE --no-daemon || true
+      echo "Running integration tests with provided test pattern. $INT_TEST_NAME "
+      ./gradlew integrationTest --tests $INT_TEST_NAME -PdatabaseType=$DB_TYPE --no-daemon || true
 else
       echo "Running all integration tests."
       ./gradlew integrationTest -PdatabaseType=$DB_TYPE --no-daemon || true
