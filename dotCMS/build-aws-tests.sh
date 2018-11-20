@@ -138,40 +138,50 @@ felix.base.dir=$PWD/dotserver/tomcat/webapps/ROOT/WEB-INF/felix
 mkdir tests
 mkdir tests/logs
 
+echo " Test Pattern was:  $INT_TEST_PATTERN"
+
 if [ ! -z "$INT_TEST_PATTERN" ]; then
-
-# Run Functional tests
-ant -f build-tests.xml test-dotcms
-if [ ! -d "dotserver/tomcat/webapps/ROOT/dotsecure/logs/test" ]; then
-	echo 'Functional tests could not be run'
-
-	exit 1;
-else
-   echo "Skipping functional tests."
+  echo " test pattern was not empty "
 fi
-
-# Copy results and logs of tests
-cp dotserver/tomcat/webapps/ROOT/dotsecure/logs/test/*.xml tests
-cp dotserver/tomcat/webapps/ROOT/dotsecure/logs/*.log tests/logs
-cp dotserver/tomcat/logs/* tests/logs
-
-fi
-
-# Run Integration tests
-cd core/dotCMS
 
 if [ -z "$INT_TEST_PATTERN" ]; then
-      echo "Running integration tests with provided test pattern. $INT_TEST_PATTERN"
-      ./gradlew integrationTest --tests $INT_TEST_PATTERN -PdatabaseType=$DB_TYPE --no-daemon || true
-else
-      echo "Running all integration tests."
-      ./gradlew integrationTest -PdatabaseType=$DB_TYPE --no-daemon || true
+   echo " test pattern was empty "
 fi
 
+# if [ ! -z "$INT_TEST_PATTERN" ]; then
 
-cd ../..
-cp core/dotCMS/build/test-results/integrationTest/*.xml tests
+# Run Functional tests
+#ant -f build-tests.xml test-dotcms
+#if [ ! -d "dotserver/tomcat/webapps/ROOT/dotsecure/logs/test" ]; then
+#	echo 'Functional tests could not be run'
+#
+#	exit 1;
+#fi
+#
+## Copy results and logs of tests
+#cp dotserver/tomcat/webapps/ROOT/dotsecure/logs/test/*.xml tests
+#cp dotserver/tomcat/webapps/ROOT/dotsecure/logs/*.log tests/logs
+#cp dotserver/tomcat/logs/* tests/logs
+#
+#else
+#   echo "Skipping functional tests."
+#fi
 
-
-# Create output zip file
-zip -r ../../$OUTPUT_FILE tests
+# Run Integration tests
+#cd core/dotCMS
+#
+#if [ -z "$INT_TEST_PATTERN" ]; then
+#      echo "Running integration tests with provided test pattern. $INT_TEST_PATTERN"
+#      ./gradlew integrationTest --tests $INT_TEST_PATTERN -PdatabaseType=$DB_TYPE --no-daemon || true
+#else
+#      echo "Running all integration tests."
+#      ./gradlew integrationTest -PdatabaseType=$DB_TYPE --no-daemon || true
+#fi
+#
+#
+#cd ../..
+#cp core/dotCMS/build/test-results/integrationTest/*.xml tests
+#
+#
+## Create output zip file
+#zip -r ../../$OUTPUT_FILE tests
