@@ -32,6 +32,14 @@
                 timeout="900000"/>
     </target>
 
+    <target name="fast-start-dotcms">
+        <runservertests
+            testurl="http://localhost:8080/dotAdmin/"
+            starttarget="tomcat-start"
+            stoptarget="tomcat-stop"
+            timeout="900000"/>
+    </target>
+
     <!-- Hit the tests servlet to run all the unit tests of the application -->
     <target name="test-all-junits">
         <condition property="get.ok">

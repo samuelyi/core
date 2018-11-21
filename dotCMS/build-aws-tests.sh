@@ -152,9 +152,10 @@ cp dotserver/tomcat/webapps/ROOT/dotsecure/logs/*.log tests/logs
 cp dotserver/tomcat/logs/* tests/logs
 else
  echo 'Functional tests will be skipped.'
- ant -f build-tests.xml tomcat-start
+ ant -f build-tests.xml fast-start-dotcms
 fi
 
+echo 'Tomcat started - moving on.'
 
 # Run Integration tests
 cd core/dotCMS
