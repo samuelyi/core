@@ -37,6 +37,7 @@
             testurl="http://localhost:8080/dotAdmin/"
             starttarget="tomcat-start"
             stoptarget="tomcat-stop"
+            testtarget="null-task"
             timeout="900000"/>
     </target>
 
@@ -46,6 +47,10 @@
             <http url="http://localhost:8080/servlet/test" errorsbeginat="400"/>
         </condition>
         <fail unless="get.ok" message="One or more tests failed!!!" />
+        <echo message="dotCMS successfully tested"/>
+    </target>
+
+    <target name="null-task">
         <echo message="dotCMS successfully tested"/>
     </target>
 
