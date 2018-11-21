@@ -449,7 +449,7 @@ task executeScript(dependsOn: [describeInstance, describeDBInstance]) {
 			"ESCLUSTER": "dotCMS"+ database + cleanBranchName(branch),
 
 			"OUTPUT_FILE": project.outputFile,
-			"INT_TEST_PATTERN": project.intTestPattern
+			"INT_TEST_PATTERN": project.intTestPattern,
 		]
 
 		println( "Int Test Pattern: "+ project.intTestPattern)
