@@ -10,7 +10,6 @@ import com.dotcms.contenttype.model.type.ContentType;
 import com.dotcms.rendering.velocity.services.ContainerLoader;
 import com.dotmarketing.beans.Host;
 import com.dotmarketing.beans.Identifier;
-import com.dotmarketing.beans.Inode;
 import com.dotmarketing.beans.MultiTree;
 import com.dotmarketing.business.APILocator;
 import com.dotmarketing.business.CacheLocator;
@@ -23,7 +22,6 @@ import com.dotmarketing.portlets.containers.business.ContainerAPI;
 import com.dotmarketing.portlets.containers.model.Container;
 import com.dotmarketing.portlets.containers.model.FileAssetContainer;
 import com.dotmarketing.portlets.contentlet.business.HostAPI;
-import com.dotmarketing.portlets.contentlet.model.Contentlet;
 import com.dotmarketing.portlets.folders.model.Folder;
 import com.dotmarketing.util.Constants;
 import com.dotmarketing.util.Logger;
@@ -59,9 +57,7 @@ public class ApplicationContainerFolderListener implements FolderListener {
                 try {
 
                     // otherwise we have to fetch the object it self.
-                    final Container container = ContainerAPI.CONTAINER_META_INFO.contains(fileAssetName)?
-                            this.createFakeContainer(child):
-                            this.containerAPI.getContainerByFolder(containerFolder, folderEvent.getUser(), false);
+                    final Container container = this.containerAPI.getContainerByFolder(containerFolder, folderEvent.getUser(), false);
 
                     if (null != container && UtilMethods.isSet(container.getIdentifier())) {
 
@@ -69,8 +65,8 @@ public class ApplicationContainerFolderListener implements FolderListener {
                             this.invalidatedRelatedPages (container);
                             CacheLocator.getIdentifierCache().removeFromCacheByVersionable(container);
                         }
-
-                        this.invalidateContainerCache(container, containerFolder, fileAssetName);
+                        final Host host = this.hostAPI.find(containerFolder.getHostId(), folderEvent.getUser(), false);
+                        this.invalidateContainerCache(FileAssetContainer.class.cast(container), host, containerFolder, fileAssetName);
 
                         Logger.debug(this, () -> "The child: " + fileAssetName + " on the folder: " +
                                 containerFolder + ", has been removed, so the container was invalidated");
@@ -99,9 +95,7 @@ public class ApplicationContainerFolderListener implements FolderListener {
             if (isContentType || this.isSpecialAsset (fileAssetName)) {
                 try {
 
-                    final Container container = ContainerAPI.CONTAINER_META_INFO.contains(fileAssetName)?
-                            this.createFakeContainer(child):
-                            this.containerAPI.getContainerByFolder(containerFolder, folderEvent.getUser(), false);
+                    final Container container = this.containerAPI.getContainerByFolder(containerFolder, folderEvent.getUser(), false);
 
                     if (null != container && UtilMethods.isSet(container.getIdentifier())) {
 
@@ -114,8 +108,8 @@ public class ApplicationContainerFolderListener implements FolderListener {
                         if (isContentType) {
                             this.removeContentTypeMultitreesAssociated (contentType.get(), container);
                         }
-
-                        this.invalidateContainerCache(container, containerFolder ,fileAssetName);
+                        final Host host = this.hostAPI.find(containerFolder.getHostId(), folderEvent.getUser(), false);
+                        this.invalidateContainerCache(FileAssetContainer.class.cast(container), host, containerFolder ,fileAssetName);
 
                         Logger.debug(this, () -> "The child: " + fileAssetName + " on the folder: " +
                                 containerFolder + ", has been removed, so the container was invalidated");
@@ -137,28 +131,6 @@ public class ApplicationContainerFolderListener implements FolderListener {
         for (final MultiTree multiTree : multiTreeList) {
             APILocator.getMultiTreeAPI().deleteMultiTree(multiTree);
         }
-    }
-
-    /**
-     * When the file to remove is the ContainerAPI.CONTAINER_META_INFO, since it does not exists we have to create a fake container with just the
-     * id and inode
-     * @param child Object expects a {@link Inode}
-     * @return Container
-     */
-    private Container createFakeContainer(final Object child) {
-        final Container container = new Container();
-        if (child instanceof Contentlet) {
-            final Contentlet webAsset = (Contentlet) child;
-            container.setIdentifier(webAsset.getIdentifier());
-            container.setInode(webAsset.getInode());
-            container.setOwner(webAsset.getOwner());
-        } else {
-            final Inode webAsset = (Inode) child;
-            container.setIdentifier(webAsset.getIdentifier());
-            container.setInode(webAsset.getInode());
-            container.setOwner(webAsset.getOwner());
-        }
-        return container;
     }
 
     @WrapInTransaction
@@ -264,15 +236,8 @@ public class ApplicationContainerFolderListener implements FolderListener {
         }*/
     }
 
-    private void invalidateContainerCache(final Container container, final Folder containerFolder, final String fileAssetName) throws DotDataException, DotSecurityException {
-
-        final ContainerLoader containerLoader = new ContainerLoader();
-        if(container instanceof FileAssetContainer){
-            containerLoader.invalidate(FileAssetContainer.class.cast(container), containerFolder, fileAssetName);
-        } else {
-            containerLoader.invalidate(container);
-            CacheLocator.getContainerCache().remove(container);
-        }
+    private void invalidateContainerCache(final FileAssetContainer container, final Host host, final Folder containerFolder, final String fileAssetName) throws DotDataException, DotSecurityException {
+        new ContainerLoader().invalidate(container, host, containerFolder, fileAssetName);
         CacheLocator.getContentTypeCache().removeContainerStructures(container.getIdentifier(), container.getInode());
     }
 }

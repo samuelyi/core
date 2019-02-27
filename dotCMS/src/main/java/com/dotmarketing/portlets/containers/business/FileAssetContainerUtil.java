@@ -1,5 +1,8 @@
 package com.dotmarketing.portlets.containers.business;
 
+import static com.dotmarketing.util.StringUtils.builder;
+import static com.liferay.util.StringPool.FORWARD_SLASH;
+
 import com.dotcms.api.vtl.model.DotJSON;
 import com.dotcms.contenttype.exception.NotFoundInDbException;
 import com.dotcms.rendering.velocity.util.VelocityUtil;
@@ -20,20 +23,16 @@ import com.dotmarketing.util.UUIDUtil;
 import com.dotmarketing.util.UtilMethods;
 import com.google.common.collect.ImmutableSet;
 import com.liferay.util.StringPool;
-import org.apache.commons.io.IOUtils;
-import org.apache.velocity.VelocityContext;
-import org.apache.velocity.context.Context;
-import org.apache.velocity.exception.ParseErrorException;
-
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
-import static com.dotmarketing.util.StringUtils.builder;
-import static com.liferay.util.StringPool.FORWARD_SLASH;
+import org.apache.commons.io.IOUtils;
+import org.apache.velocity.VelocityContext;
+import org.apache.velocity.context.Context;
+import org.apache.velocity.exception.ParseErrorException;
 
 /**
  * This util is in charge of handling the creation of the FileAsset containers based on the folder and their contains.
@@ -325,6 +324,9 @@ public class FileAssetContainerUtil {
         return ImmutableSet.<FileAsset>builder().addAll(APILocator.getFileAssetAPI()
                 .findFileAssetsByFolder(containerFolder, null, false, APILocator.systemUser(),
                         false))
+                .addAll(APILocator.getFileAssetAPI()
+                        .findFileAssetsByFolder(containerFolder, null, true,
+                                APILocator.systemUser(), false))
                                 .build();
     }
 

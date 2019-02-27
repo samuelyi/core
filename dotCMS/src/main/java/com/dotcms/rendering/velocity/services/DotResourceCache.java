@@ -123,7 +123,7 @@ public class DotResourceCache implements ResourceCache, Cachable {
             }
             map.put(key.path, resource);
             cache.put(key.cacheKey, map, primaryGroup);
-            Logger.debug(this,()->String.format("Velocity-cache put key (path) : '%s'",key.path));
+            Logger.debug(this,()->String.format("Velocity-cache put container cacheKey : '%s'",key.cacheKey));
         }else {
         
             // Add the key to the cache

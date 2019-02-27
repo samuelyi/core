@@ -125,8 +125,8 @@ public class ContainerFinderStrategyResolver {
 
             try {
 
-                container = (key.mode.showLive)?
-                    this.containerAPI.getLiveContainerById   (key.id1, APILocator.systemUser(), true):
+                container = //(key.mode.showLive)?
+                    //this.containerAPI.getLiveContainerById   (key.id1, APILocator.systemUser(), true):
                     this.containerAPI.getWorkingContainerById(key.id1, APILocator.systemUser(), true);
             } catch (DotDataException | DotSecurityException e) {
                 throw new DotStateException("cannot find container for : " +  key, e);
@@ -159,7 +159,7 @@ public class ContainerFinderStrategyResolver {
                 final Host site                = this.getHost(key.path);
                 final String baseContainerPath = this.getContainerPath (key.path, site.getHostname());
                 final Folder folder            = this.folderAPI.findFolderByPath(baseContainerPath, site, APILocator.systemUser(), false);
-                container                      = containerAPI.getContainerByFolder(folder, site, APILocator.systemUser(), key.mode.showLive);
+                container                      = containerAPI.getContainerByFolder(folder, site, APILocator.systemUser(), false);
             } catch (DotDataException | DotSecurityException e) {
                 throw new DotStateException("cannot find container for : " +  key, e);
             }
