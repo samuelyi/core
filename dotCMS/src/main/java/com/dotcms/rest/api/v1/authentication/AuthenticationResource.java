@@ -126,15 +126,18 @@ public class AuthenticationResource implements Serializable {
                 request.getSession().setAttribute(Globals.LOCALE_KEY, locale);
             } else {
 
-                res = this.responseUtil.getErrorResponse(request, Response.Status.UNAUTHORIZED,
-                        locale, userId, "authentication-failed");
+                res = Response.status(Response.Status.UNAUTHORIZED)
+                        .entity(new ResponseEntityView("authentication-failed"))
+                        .build();
             }
-        } catch (NoSuchUserException | UserEmailAddressException | UserPasswordException e) {
-            res = this.responseUtil.getErrorResponse(request, Response.Status.UNAUTHORIZED, locale, userId, "authentication-failed");
-        } catch (AuthException e) {
-            res = this.responseUtil.getErrorResponse(request, Response.Status.UNAUTHORIZED, locale, userId, "authentication-failed");
+        } catch (NoSuchUserException | UserEmailAddressException | UserPasswordException | AuthException e) {
+            res = Response.status(Response.Status.UNAUTHORIZED)
+                    .entity(new ResponseEntityView("authentication-failed"))
+                    .build();
         } catch (RequiredLayoutException e) {
-            res = this.responseUtil.getErrorResponse(request, Response.Status.INTERNAL_SERVER_ERROR, locale, userId, "user-without-portlet");
+            res = Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(new ResponseEntityView("user-without-portlet"))
+                    .build();
         } catch (UserActiveException e) {
 
             try {
@@ -147,8 +150,6 @@ public class AuthenticationResource implements Serializable {
             } catch (LanguageException e1) {
                 // Quiet
             }
-        } catch (DotSecurityException e) {
-            throw new ForbiddenException(e);
         } catch (Exception e) { // this is an unknown error, so we report as a 500.
 
             SecurityLogger.logInfo(this.getClass(),"An invalid attempt to login as " + userId.toLowerCase() + " has been made from IP: " + request.getRemoteAddr());
