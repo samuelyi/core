@@ -3,6 +3,9 @@ package com.dotcms.rest.exception;
 import com.dotcms.repackage.javax.ws.rs.WebApplicationException;
 import com.dotcms.repackage.javax.ws.rs.core.MediaType;
 import com.dotcms.repackage.javax.ws.rs.core.Response;
+import com.dotcms.rest.ErrorResponseHelper;
+import com.dotcms.rest.api.v1.authentication.ResponseUtil;
+import com.dotcms.rest.exception.mapper.ExceptionMapperUtil;
 import com.dotmarketing.util.Logger;
 import com.dotmarketing.util.json.JSONException;
 import com.dotmarketing.util.json.JSONObject;
@@ -45,7 +48,7 @@ public abstract class HttpStatusCodeException extends WebApplicationException {
     }
 
     HttpStatusCodeException(final Throwable cause, final Response.Status status, String key, final Object entity, final String message) {
-        super(cause, toResponse(status, entity, key, message));
+        super(cause, toResponse(status, key, message));
         if(Response.Status.NOT_FOUND == status ){
             Logger.getLogger(this.getClass()).debug(this.getResponse().getEntity().toString(),this);
         }
@@ -74,30 +77,7 @@ public abstract class HttpStatusCodeException extends WebApplicationException {
     private static Response toResponse(Response.Status status,
                                        String key,
                                        String message) {
-        // @todo ggranum: i18 the message using the property key. Or don't, and provide endpoint(s) for retrieving error messages.
-        String msg = key + ": " + message;
-        String entity;
-        try {
-            JSONObject json = new JSONObject();
-            json.put("error", msg);
-            entity = json.toString();
-        } catch (JSONException e) {
-            entity = "{ \"error\": \"" + msg.replace("\"", "\\\"") + "\" }";
-        }
-        return Response.status(status)
-                       .header("error-key", key)
-                       .header("error-message", message)
-                       .entity(entity).type(MediaType.APPLICATION_JSON_TYPE).build();
+        return ErrorResponseHelper.INSTANCE.getErrorResponse(status, message, key);
     }
 
-    private static Response toResponse(final Response.Status status,
-                                       final Object entity,
-                                       final String key,
-                                       final String message) {
-
-        return Response.status(status)
-                .header("error-key", key)
-                .header("error-message", message)
-                .entity(entity).type(MediaType.APPLICATION_JSON_TYPE).build();
-    }
 }

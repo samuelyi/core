@@ -46,4 +46,14 @@ public class ErrorResponseHelper implements Serializable {
 
         return null;
     }
+
+    public Response getErrorResponse(final Response.Status status,
+                                     final String message,
+                                     final String messageKey) {
+
+        return Response.status(status).entity
+                (new ResponseEntityView
+                        (Arrays.asList(new ErrorEntity(messageKey,
+                                message)))).build();
+    }
 } // E:O:F:ErrorResponseHelper.
