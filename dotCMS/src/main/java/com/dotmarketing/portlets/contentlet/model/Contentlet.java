@@ -706,7 +706,8 @@ public class Contentlet implements Serializable, Permissionable, Categorizable, 
      * @return
      */
     private boolean isRelationshipField(String fieldVarName) {
-        return this.getContentType().fieldMap().containsKey(fieldVarName) && this.getContentType()
+        return this.getContentType().fieldMap() != null && this.getContentType().fieldMap()
+                .containsKey(fieldVarName) && this.getContentType()
                 .fieldMap().get(fieldVarName) instanceof RelationshipField;
     }
 
