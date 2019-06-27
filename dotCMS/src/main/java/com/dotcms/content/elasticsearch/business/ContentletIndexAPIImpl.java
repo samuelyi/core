@@ -28,9 +28,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import java.util.stream.Collectors;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.admin.indices.stats.IndexStats;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -40,6 +40,7 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.CreateIndexResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -144,7 +145,7 @@ public class ContentletIndexAPIImpl implements ContentletIndexAPI {
             if (!indexReady())
                 initIndex();
         } catch (Exception e) {
-            Logger.fatal("ESUil.checkAndInitialiazeIndex", e.getMessage());
+            Logger.fatal("ESUil.checkAndInitializeIndex", e.getMessage());
 
         }
     }
@@ -622,7 +623,9 @@ public class ContentletIndexAPIImpl implements ContentletIndexAPI {
         }
         inodes.values().removeIf(Objects::isNull);
         if (inodes.isEmpty()) {
-            APILocator.getReindexQueueAPI().markAsFailed(idx, "unable to find versions for content id:" + idx.getIdentToIndex());
+            //If there is no content for this entry, it should be deleted to avoid future attempts that will fail also
+            APILocator.getReindexQueueAPI().deleteReindexEntry(idx);
+            Logger.debug(this, "unable to find versions for content id:" + idx.getIdentToIndex());
         }
         for (Contentlet contentlet : inodes.values()) {
             Logger.debug(this, "indexing: id:" + contentlet.getInode() + " priority: " + idx.getPriority());
@@ -1006,7 +1009,7 @@ public class ContentletIndexAPIImpl implements ContentletIndexAPI {
     }
 
     public List<String> listDotCMSClosedIndices() {
-        List<String> indexNames = new ArrayList<String>();
+        List<String> indexNames = new ArrayList<>();
         List<String> list = APILocator.getESIndexAPI().getClosedIndexes();
         for (String idx : list)
             if (isDotCMSIndexName(idx))
@@ -1019,36 +1022,19 @@ public class ContentletIndexAPIImpl implements ContentletIndexAPI {
      * 
      * @return
      */
+    @SuppressWarnings("unchecked")
     public List<String> listDotCMSIndices() {
-        Map<String, IndexStats> indices = APILocator.getESIndexAPI().getIndicesAndStatus();
-        List<String> indexNames = new ArrayList<>();
+        final Request request = new Request("GET", "_cat/indices?format=json");
+        final List<Map<String, String>> indices = APILocator.getESIndexAPI()
+                .performLowLevelRequest(request, List.class);
 
-        for (String idx : indices.keySet()) {
-            if (isDotCMSIndexName(idx)) {
-                indexNames.add(idx);
-            }
-        }
+        List<String> indexes = indices.stream()
+                .filter(indexMap->indexMap.get("status").equals("open"))
+                .map(indexMap->indexMap.get("index"))
+                .filter(this::isDotCMSIndexName)
+                .collect(Collectors.toList());
 
-        List<String> existingIndex = new ArrayList<>();
-
-        for (String idx : indexNames) {
-
-            final GetIndexRequest getIndexRequest = new GetIndexRequest(idx);
-
-            boolean doesIndexExist = Sneaky.sneak(()->DotRestHighLevelClient.getClient().indices()
-                    .exists(getIndexRequest,
-                    RequestOptions.DEFAULT));
-
-            if (doesIndexExist) {
-                existingIndex.add(idx);
-            }
-        }
-
-        indexNames = existingIndex;
-
-        List<String> indexes = new ArrayList<String>();
-        indexes.addAll(indexNames);
-        Collections.sort(indexes, new IndexSortByDate());
+        indexes.sort(new IndexSortByDate());
 
         return indexes;
     }
