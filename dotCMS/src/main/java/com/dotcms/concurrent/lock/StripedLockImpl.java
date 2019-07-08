@@ -15,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
- * Strip lock Implementation - backedup by ConcurrentHashMap
+ * Strip lock Implementation - backed-up by ConcurrentHashMap
  */
 public class StripedLockImpl<K> implements DotKeyLockManager<K> {
 
