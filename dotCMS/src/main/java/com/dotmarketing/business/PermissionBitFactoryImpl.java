@@ -1,8 +1,8 @@
 package com.dotmarketing.business;
 
 import static com.dotcms.content.elasticsearch.business.ESIndexAPI.INDEX_OPERATIONS_TIMEOUT_IN_MS;
-import static com.dotcms.exception.ExceptionUtil.bubbleUpException;
 
+import com.dotcms.business.CloseDBIfOpened;
 import com.dotcms.business.WrapInTransaction;
 import com.dotcms.concurrent.DotConcurrentFactory;
 import com.dotcms.concurrent.lock.IdentifierStripedLock;
@@ -13,9 +13,8 @@ import com.dotcms.contenttype.model.type.BaseContentType;
 import com.dotcms.contenttype.model.type.ContentType;
 import com.dotcms.contenttype.transform.contenttype.StructureTransformer;
 import com.dotcms.rendering.velocity.viewtools.navigation.NavResult;
-
 import com.dotcms.system.SimpleMapAppContext;
-import com.dotcms.util.ReturnableDelegate;
+import com.dotcms.util.LogTime;
 import com.dotmarketing.beans.Host;
 import com.dotmarketing.beans.Identifier;
 import com.dotmarketing.beans.Inode;
@@ -57,7 +56,6 @@ import com.dotmarketing.util.Config;
 import com.dotmarketing.util.InodeUtils;
 import com.dotmarketing.util.Logger;
 import com.dotmarketing.util.UtilMethods;
-
 import com.liferay.portal.model.User;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -965,9 +963,12 @@ public class PermissionBitFactoryImpl extends PermissionFactory {
 
 	@Override
 	protected List<Permission> getInheritablePermissions(Permissionable permissionable, boolean bitPermissions) throws DotDataException {
+
 		List<Permission> bitPermissionsList = permissionCache.getPermissionsFromCache(permissionable.getPermissionId());
 		if (bitPermissionsList == null) {
 			bitPermissionsList = loadPermissions(permissionable);
+			Logger.info(PermissionBitFactoryImpl.class,"This method is called recursively. ");
+			
 		}
 
 		if(!bitPermissions)
@@ -1024,6 +1025,7 @@ public class PermissionBitFactoryImpl extends PermissionFactory {
 		//No permissions in cache have to look for individual permissions or inherited permissions
 		if (bitPermissionsList == null) {
 			try {
+			    /*
 				bitPermissionsList = lockManager
 						.tryLock(LOCK_PREFIX + permissionable.getPermissionId(),
 						() -> {
@@ -1038,6 +1040,9 @@ public class PermissionBitFactoryImpl extends PermissionFactory {
 							}
 							return permissionsList;
 						});
+						*/
+				 bitPermissionsList = loadPermissions(permissionable);
+				 permissionCache.addToPermissionCache(permissionable.getPermissionId(), bitPermissionsList);
 			} catch (final Throwable throwable) {
 				if (throwable instanceof DotDataException) {
 					throw (DotDataException) throwable;
@@ -2161,8 +2166,25 @@ public class PermissionBitFactoryImpl extends PermissionFactory {
 		}
 	}
 
+	private List<Permission> loadPermissions(final Permissionable permissionable)
+			throws DotDataException {
+		try {
+
+			return lockManager.tryLock(LOCK_PREFIX + permissionable.getPermissionId(),
+					() -> internalLoadPermissions(permissionable));
+
+			//return internalLoadPermissions(permissionable);
+
+		} catch (final Throwable throwable) {
+			if (throwable instanceof DotDataException) {
+				throw (DotDataException) throwable;
+			}
+			throw new DotDataException(throwable);
+		}
+	}
+
 	@SuppressWarnings("unchecked")
-	private List<Permission> loadPermissions(Permissionable permissionable) throws DotDataException {
+	private List<Permission> internalLoadPermissions(final Permissionable permissionable) throws DotDataException {
 
 		if(permissionable == null || ! UtilMethods.isSet(permissionable.getPermissionId())){
 			throw new DotDataException("Invalid Permissionable passed in. permissionable:" + permissionable.getPermissionId());
@@ -2181,6 +2203,7 @@ public class PermissionBitFactoryImpl extends PermissionFactory {
 		if(bitPermissionsList.isEmpty()) {
 
 				try {
+				    /*
 					bitPermissionsList = lockManager
 							.tryLock(LOCK_PREFIX + permissionable.getPermissionId(), () -> {
 
@@ -2250,7 +2273,9 @@ public class PermissionBitFactoryImpl extends PermissionFactory {
 
 							return inheritedPermissions;
 
-					});
+					}); */
+
+					bitPermissionsList = buildPermissionList(permissionable);
 				} catch (final Throwable throwable) {
 					if (throwable instanceof DotDataException) {
 						throw (DotDataException) throwable;
@@ -2265,6 +2290,75 @@ public class PermissionBitFactoryImpl extends PermissionFactory {
 
 	}
 
+	private List<Permission> buildPermissionList(final Permissionable permissionable) throws DotDataException{
+		//Need to determine who this asset should inherit from
+		String type = permissionable.getPermissionType();
+		if(permissionable instanceof Host ||
+				(permissionable instanceof Contentlet &&
+						((Contentlet)permissionable).getStructure() != null &&
+						((Contentlet)permissionable).getStructure().getVelocityVarName() != null &&
+						((Contentlet)permissionable).getStructure().getVelocityVarName().equals("Host"))){
+			type = Host.class.getCanonicalName();
+		} else if ( permissionable instanceof Contentlet &&
+				BaseContentType.FILEASSET.getType() == ((Contentlet) permissionable).getStructure().getStructureType()) {
+			type = Contentlet.class.getCanonicalName();
+		} else if ( permissionable instanceof IHTMLPage ||
+				(permissionable instanceof Contentlet && BaseContentType.HTMLPAGE.getType() == ((Contentlet) permissionable).getStructure().getStructureType())) {
+			type = IHTMLPage.class.getCanonicalName();
+		}else if(permissionable instanceof Event){
+			type = Contentlet.class.getCanonicalName();
+		}else if(permissionable instanceof Identifier){
+			Permissionable perm = InodeFactory.getInode(permissionable.getPermissionId(), Inode.class);
+			Logger.error(this, "PermissionBitFactoryImpl :  loadPermissions Method : was passed an identifier. This is a problem. We will get inode as a fallback but this should be reported");
+			if(perm!=null){
+				if ( perm instanceof IHTMLPage ||
+						(perm instanceof Contentlet && BaseContentType.HTMLPAGE.getType() == ((Contentlet) perm).getStructure().getStructureType())) {
+					type = IHTMLPage.class.getCanonicalName();
+				}else if(perm instanceof Container){
+					type = Container.class.getCanonicalName();
+				}else if(perm instanceof Folder){
+					type = Folder.class.getCanonicalName();
+				}else if(perm instanceof Link){
+					type = Link.class.getCanonicalName();
+				}else if(perm instanceof Template){
+					type = Template.class.getCanonicalName();
+				} else if (perm instanceof Structure || perm instanceof ContentType) {
+					type = Structure.class.getCanonicalName();
+				}else if(perm instanceof Contentlet || perm instanceof Event){
+					type = Contentlet.class.getCanonicalName();
+				}
+			}
+		}
+
+		if(permissionable instanceof Template && UtilMethods.isSet(((Template) permissionable).isDrawed()) && ((Template) permissionable).isDrawed()) {
+			type = TemplateLayout.class.getCanonicalName();
+		}
+
+		if(permissionable instanceof NavResult) {
+			type = ((NavResult)permissionable).getEnclosingPermissionClassName();
+		}
+
+		Permissionable parentPermissionable = permissionable.getParentPermissionable();
+		Permissionable newReference = null;
+		List<Permission> inheritedPermissions = new ArrayList<Permission>();
+		while(parentPermissionable != null) {
+			newReference = parentPermissionable;
+			inheritedPermissions = getInheritablePermissions(parentPermissionable, type);
+			if(inheritedPermissions.size() > 0) {
+				break;
+			}
+			parentPermissionable = parentPermissionable.getParentPermissionable();
+		}
+		HostAPI hostAPI = APILocator.getHostAPI();
+		if(newReference == null)
+			newReference = hostAPI.findSystemHost();
+
+		deleteInsertPermission(permissionable, type, newReference);
+
+		return inheritedPermissions;
+
+	}
+
 
 	protected static final String PERMISSION_REFERENCE = "permission_reference";
 	protected static final String ASSET_ID = "asset_id";
@@ -2272,35 +2366,39 @@ public class PermissionBitFactoryImpl extends PermissionFactory {
 	protected static final String PERMISSION_TYPE = "permission_type";
 	protected static final String ID = "id";
 
-    @WrapInTransaction
+    @CloseDBIfOpened
 	private void deleteInsertPermission(Permissionable permissionable, String type,
             Permissionable newReference) throws DotDataException {
-
+     long t1 = System.currentTimeMillis();
         final String permissionId = permissionable.getPermissionId();
-
+		Logger.info(PermissionBitFactoryImpl.class, "PermissionID is: " + permissionId + ": in transaction: " +DbConnectionFactory.inTransaction() );
+        final Thread current = Thread.currentThread();
         try{
-            Logger.debug(this.getClass(), "PERMDEBUG: " + Thread.currentThread().getName() + " - " + permissionId
-                    + " - started");
+            Logger.debug(this.getClass(),
+            "PERMDEBUG: " + Thread.currentThread().getName() + " - " + permissionId + " - started");
 
             DotConnect dc1 = new DotConnect();
             dc1.setSQL("SELECT inode FROM inode WHERE inode = ?");
             dc1.addParam(permissionId);
             List<Map<String, Object>> inodeList = dc1.loadObjectResults();
+			Logger.info(PermissionBitFactoryImpl.class, "query1 done. state is "+current.getState().name());
 
             dc1.setSQL("SELECT id FROM identifier WHERE id = ?");
             dc1.addParam(permissionId);
             List<Map<String, Object>> identifierList = dc1.loadObjectResults();
+			Logger.info(PermissionBitFactoryImpl.class, "query2 done. state is "+current.getState().name());
 
             if((inodeList != null && inodeList.size()>0) || (identifierList!=null && identifierList.size()>0)){
-                dc1.executeUpdate(DELETE_PERMISSIONABLE_REFERENCE_SQL, permissionId);
-
-				upsertPermission(dc1, permissionId, newReference, type);
+				deleteUpdatePermission(permissionId, type, newReference);
+            } else {
+				Logger.info(PermissionBitFactoryImpl.class, "nothing was done. ");
             }
 
         } catch(Exception exception){
             if(permissionable != null && newReference != null){
                 Logger.warn(this.getClass(), "Failed to insert Permission Ref. Usually not a problem. Permissionable:" + permissionId
                         + " Parent : " + newReference.getPermissionId() + " Type: " + type);
+                        deleteUpdatePermission(permissionId,type,newReference);
             }
             else{
                 Logger.warn(this.getClass(), "Failed to insert Permission Ref. Usually not a problem. Setting Parent Permissions to null value: Permissionable:" + permissionable + " Parent:" + newReference + " Type: " + type);
@@ -2312,6 +2410,18 @@ public class PermissionBitFactoryImpl extends PermissionFactory {
             Logger.debug(this.getClass(), "PERMDEBUG: " + Thread.currentThread().getName() + " - " + permissionId
                     + " - ended");
         }
+		long t2 = System.currentTimeMillis();
+		Logger.info(PermissionBitFactoryImpl.class,  "LOL:Permission: " +permissionId + " duration in secs: " + ((t2 - t1)/1000));
+    }
+
+	@WrapInTransaction
+    private void deleteUpdatePermission(final String permissionId , final String type, final Permissionable newReference)throws DotDataException{
+		DotConnect dc1 = new DotConnect();
+        Logger.info(PermissionBitFactoryImpl.class, "before executing update. state is ");
+        dc1.executeUpdate(DELETE_PERMISSIONABLE_REFERENCE_SQL, permissionId);
+        Logger.info(PermissionBitFactoryImpl.class, "execute update done. state is ");
+        upsertPermission(dc1, permissionId, newReference, type);
+        Logger.info(PermissionBitFactoryImpl.class, "upsert done. ");
     }
 
 	/**

@@ -1,11 +1,27 @@
 package com.dotcms.exception;
 
+import static com.dotmarketing.portlets.contentlet.business.DotContentletValidationException.VALIDATION_FAILED_BADTYPE;
+import static com.dotmarketing.portlets.contentlet.business.DotContentletValidationException.VALIDATION_FAILED_BAD_CARDINALITY;
+import static com.dotmarketing.portlets.contentlet.business.DotContentletValidationException.VALIDATION_FAILED_BAD_REL;
+import static com.dotmarketing.portlets.contentlet.business.DotContentletValidationException.VALIDATION_FAILED_INVALID_REL_CONTENT;
+import static com.dotmarketing.portlets.contentlet.business.DotContentletValidationException.VALIDATION_FAILED_MAXLENGTH;
+import static com.dotmarketing.portlets.contentlet.business.DotContentletValidationException.VALIDATION_FAILED_PATTERN;
+import static com.dotmarketing.portlets.contentlet.business.DotContentletValidationException.VALIDATION_FAILED_REQUIRED;
+import static com.dotmarketing.portlets.contentlet.business.DotContentletValidationException.VALIDATION_FAILED_REQUIRED_REL;
+import static com.dotmarketing.portlets.contentlet.business.DotContentletValidationException.VALIDATION_FAILED_UNIQUE;
+
 import com.dotcms.contenttype.exception.NotFoundInDbException;
 import com.dotcms.repackage.com.google.common.collect.ImmutableSet;
 import com.dotcms.rest.exception.BadRequestException;
 import com.dotcms.rest.exception.ValidationException;
 import com.dotmarketing.business.DotStateException;
-import com.dotmarketing.exception.*;
+import com.dotmarketing.exception.AlreadyExistException;
+import com.dotmarketing.exception.DoesNotExistException;
+import com.dotmarketing.exception.DotDataException;
+import com.dotmarketing.exception.DotDataValidationException;
+import com.dotmarketing.exception.DotRuntimeException;
+import com.dotmarketing.exception.DotSecurityException;
+import com.dotmarketing.exception.InvalidLicenseException;
 import com.dotmarketing.portlets.contentlet.business.DotContentletStateException;
 import com.dotmarketing.portlets.contentlet.business.DotContentletValidationException;
 import com.dotmarketing.portlets.contentlet.model.Contentlet;
@@ -21,12 +37,16 @@ import com.liferay.portal.language.LanguageException;
 import com.liferay.portal.language.LanguageUtil;
 import com.liferay.portal.model.User;
 import com.liferay.util.StringPool;
-
-import javax.servlet.http.HttpServletRequest;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
-
-import static com.dotmarketing.portlets.contentlet.business.DotContentletValidationException.*;
+import java.util.Optional;
+import java.util.Set;
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * Exception Utils
@@ -373,8 +393,17 @@ public class ExceptionUtil {
      * @return String
      */
     public static String getCurrentStackTraceAsString (final int limit) {
-        final StringBuilder builder = new StringBuilder();
         final StackTraceElement [] traces = Thread.currentThread().getStackTrace();
+        return getStackTraceAsString(limit, traces);
+    }
+
+    /**
+     * Get the current thread stack trace as a simple string
+     * @param limit {@link Integer} limit for the stack trace to attach
+     * @return String
+     */
+    public static String getStackTraceAsString(final int limit, final StackTraceElement [] traces) {
+        final StringBuilder builder = new StringBuilder();
         int count = limit;
         for (final StackTraceElement traceElement : traces) {
             builder.append("\tat " + traceElement + "\n");
