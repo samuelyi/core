@@ -126,7 +126,7 @@ public class DotRestHighLevelClientProvider extends RestHighLevelClientProvider 
                 if (m.find()) {
                     String envVarName = null == m.group(1) ? m.group(2) : m.group(1);
                     String envVarValue = System.getenv(envVarName);
-                    Logger.info(DotRestHighLevelClientProvider.class, "PASS FOR ADMIN: " + envVarValue);
+                    Logger.info(DotRestHighLevelClientProvider.class, "VAR NAME " + envVarName + "PASS FOR ADMIN: " + envVarValue);
                     return envVarValue;
                 }
             }
