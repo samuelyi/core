@@ -140,7 +140,7 @@ public class DotRestHighLevelClientProvider extends RestHighLevelClientProvider 
         private static void initClientBuilder(String esAuthType) {
             clientBuilder = RestClient
                     .builder(new HttpHost(Config.getStringProperty("ES_HOSTNAME", "127.0.0.1"),
-                            Config.getIntProperty("ES_PORT", 9200), "https"))
+                            Config.getIntProperty("ES_PORT", 9200), Config.getStringProperty("ES_PROTOCOL", "https")))
                     .setHttpClientConfigCallback((httpClientBuilder) -> {
                         if (LazyHolder.sslContextFromPem != null) {
                             httpClientBuilder
