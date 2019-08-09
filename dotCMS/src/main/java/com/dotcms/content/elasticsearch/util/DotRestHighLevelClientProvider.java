@@ -103,35 +103,13 @@ public class DotRestHighLevelClientProvider extends RestHighLevelClientProvider 
                 credentialsProvider.setCredentials(AuthScope.ANY,
                         new UsernamePasswordCredentials(
                                 Config.getStringProperty("ES_AUTH_BASIC_USER", null),
-                                getAuthPassword()));
+                                Config.getStringProperty("ES_AUTH_BASIC_PASSWORD", null)));
                 Logger.info(DotRestHighLevelClientProvider.class,
                         "Initializing Elastic RestHighLevelClient using Basic authentication");
             }
 
             initClientBuilder(esAuthType);
 
-        }
-
-        /**
-         * Reads from properties file the password for the admin user. In case it is set as a variable, an environment variable
-         * will be read
-         * @return Password for admin user
-         */
-        private static String getAuthPassword() {
-            String password = Config.getStringProperty("ES_AUTH_BASIC_PASSWORD", null);
-
-            /*if (password != null) {
-                Pattern p = Pattern.compile("\\$\\{(\\w+)\\}|\\$(\\w+)");
-                Matcher m = p.matcher(password);
-                if (m.find()) {
-                    String envVarName = null == m.group(1) ? m.group(2) : m.group(1);
-                    String envVarValue = System.getenv(envVarName);
-                    return envVarValue;
-                }
-            }
-
-            Logger.info(DotRestHighLevelClientProvider.class, "NO PASS SET: " + password);*/
-            return password;
         }
 
         static final RestHighLevelClient INSTANCE = new RestHighLevelClient(clientBuilder);
