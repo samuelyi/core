@@ -120,7 +120,7 @@ public class DotRestHighLevelClientProvider extends RestHighLevelClientProvider 
         private static String getAuthPassword() {
             String password = Config.getStringProperty("ES_AUTH_BASIC_PASSWORD", null);
 
-            if (password != null) {
+            /*if (password != null) {
                 Pattern p = Pattern.compile("\\$\\{(\\w+)\\}|\\$(\\w+)");
                 Matcher m = p.matcher(password);
                 if (m.find()) {
@@ -130,7 +130,7 @@ public class DotRestHighLevelClientProvider extends RestHighLevelClientProvider 
                 }
             }
 
-            Logger.info(DotRestHighLevelClientProvider.class, "NO PASS SET: " + password);
+            Logger.info(DotRestHighLevelClientProvider.class, "NO PASS SET: " + password);*/
             return password;
         }
 
