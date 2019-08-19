@@ -384,10 +384,17 @@ public class BinaryExporterServlet extends HttpServlet {
       // this creates a temp resource using the altered file
       if (req.getParameter(WebKeys.IMAGE_TOOL_SAVE_FILES) != null && user!=null && !user.equals(APILocator.getUserAPI().getAnonymousUser())) {
         final DotTempFile temp = APILocator.getTempFileAPI().createEmptyTempFile(inputFile.getName(), req);
+		  Logger.info(this,"STEP 1");
         FileUtil.copyFile(data.getDataFile(), temp.file);
-        resp.getWriter().println(DotObjectMapperProvider.getInstance().getDefaultObjectMapper().writeValueAsString(temp));
-        resp.getWriter().close();
+        Logger.info(this,"STEP 2");
+        final String value = DotObjectMapperProvider.getInstance().getDefaultObjectMapper().writeValueAsString(temp);
+        Logger.info(this,"STEP 3");
+		  resp.getWriter().println(value);//aca se cae con docker
+		Logger.info(this,"STEP 4");
+		  resp.getWriter().close();
+		Logger.info(this,"STEP 5");
         resp.flushBuffer();
+		  Logger.info(this,"STEP 6");
         return;
       }
 
