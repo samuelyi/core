@@ -36,6 +36,7 @@ import com.dotmarketing.util.Logger;
 import com.dotmarketing.util.PageMode;
 import com.dotmarketing.util.UtilMethods;
 import com.dotmarketing.util.WebKeys;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.liferay.portal.PortalException;
 import com.liferay.portal.SystemException;
 import com.liferay.portal.model.User;
@@ -387,9 +388,13 @@ public class BinaryExporterServlet extends HttpServlet {
 		  Logger.info(this,"STEP 1");
         FileUtil.copyFile(data.getDataFile(), temp.file);
         Logger.info(this,"STEP 2");
-        final String value = DotObjectMapperProvider.getInstance().getDefaultObjectMapper().writeValueAsString(temp);
-        Logger.info(this,"STEP 3");
-		  resp.getWriter().println(value);//aca se cae con docker
+        final DotObjectMapperProvider mapperProvider = DotObjectMapperProvider.getInstance();
+		  Logger.info(this,"STEP 2.1");
+        final ObjectMapper objectMapper = mapperProvider.getDefaultObjectMapper();
+		  Logger.info(this,"STEP 2.2");
+        final String value = objectMapper.writeValueAsString(temp);
+        Logger.info(this,"STEP 3     " + value );
+		  resp.getWriter().println(value);
 		Logger.info(this,"STEP 4");
 		  resp.getWriter().close();
 		Logger.info(this,"STEP 5");
@@ -397,7 +402,7 @@ public class BinaryExporterServlet extends HttpServlet {
 		  Logger.info(this,"STEP 6");
         return;
       }
-
+			//http://localhost:8080/contentAsset/image/fe2d2e75-477d-4d89-8f22-d1592e4accd8/fileAsset/filter/WebP,Thumbnail/webp_q/65/thumbnail_h/250
       if(req.getParameter(WebKeys.IMAGE_TOOL_CLIPBOARD) != null && user!=null && !user.equals(APILocator.getUserAPI().getAnonymousUser())) {
         List<String> list = (List<String>) req.getSession().getAttribute(WebKeys.IMAGE_TOOL_CLIPBOARD);
         if (list == null) {
