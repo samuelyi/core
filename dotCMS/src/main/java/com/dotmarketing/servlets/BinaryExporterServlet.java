@@ -404,7 +404,7 @@ public class BinaryExporterServlet extends HttpServlet {
 //        final ObjectMapper objectMapper = mapperProvider.getDefaultObjectMapper();
 //		  Logger.info(this,"STEP 2.2");
 //        final String value = objectMapper.writeValueAsString(temp);
-        Logger.info(this,"STEP 3     " + json );
+        Logger.info(this,"STEP 3     " + json.toString() );
 		  resp.getWriter().println(json);
 		Logger.info(this,"STEP 4");
 		  resp.getWriter().close();
