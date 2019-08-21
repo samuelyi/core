@@ -36,6 +36,7 @@ import com.dotmarketing.util.Logger;
 import com.dotmarketing.util.PageMode;
 import com.dotmarketing.util.UtilMethods;
 import com.dotmarketing.util.WebKeys;
+import com.dotmarketing.util.json.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.liferay.portal.PortalException;
 import com.liferay.portal.SystemException;
@@ -388,13 +389,23 @@ public class BinaryExporterServlet extends HttpServlet {
 		  Logger.info(this,"STEP 1");
         FileUtil.copyFile(data.getDataFile(), temp.file);
         Logger.info(this,"STEP 2");
-        final DotObjectMapperProvider mapperProvider = DotObjectMapperProvider.getInstance();
-		  Logger.info(this,"STEP 2.1");
-        final ObjectMapper objectMapper = mapperProvider.getDefaultObjectMapper();
-		  Logger.info(this,"STEP 2.2");
-        final String value = objectMapper.writeValueAsString(temp);
-        Logger.info(this,"STEP 3     " + value );
-		  resp.getWriter().println(value);
+        //crear el json  {"id":"temp_df14b758e6","mimeType":"image/jpeg","referenceUrl":"/dA/temp_df14b758e6/tmp/boston.jpg","thumbnailUrl":"/contentAsset/image/temp_df14b758e6/tmp/filter/Thumbnail/thumbnail_w/250/thumbnail_h/250/boston.jpg","fileName":"boston.jpg","folder":"","image":true,"length":961572}
+		  final JSONObject json = new JSONObject();
+		  json.put("id",temp.id);
+		  json.put("mimeType",temp.mimeType);
+		  json.put("referenceUrl",temp.referenceUrl);
+		  json.put("thumbnailUrl",temp.thumbnailUrl);
+		  json.put("fileName",temp.fileName);
+		  json.put("folder",temp.folder);
+		  json.put("image",temp.image);
+		  json.put("length",temp.length());
+//        final DotObjectMapperProvider mapperProvider = DotObjectMapperProvider.getInstance();
+//		  Logger.info(this,"STEP 2.1");
+//        final ObjectMapper objectMapper = mapperProvider.getDefaultObjectMapper();
+//		  Logger.info(this,"STEP 2.2");
+//        final String value = objectMapper.writeValueAsString(temp);
+        Logger.info(this,"STEP 3     " + json );
+		  resp.getWriter().println(json);
 		Logger.info(this,"STEP 4");
 		  resp.getWriter().close();
 		Logger.info(this,"STEP 5");
@@ -402,7 +413,7 @@ public class BinaryExporterServlet extends HttpServlet {
 		  Logger.info(this,"STEP 6");
         return;
       }
-			//http://localhost:8080/contentAsset/image/fe2d2e75-477d-4d89-8f22-d1592e4accd8/fileAsset/filter/WebP,Thumbnail/webp_q/65/thumbnail_h/250
+
       if(req.getParameter(WebKeys.IMAGE_TOOL_CLIPBOARD) != null && user!=null && !user.equals(APILocator.getUserAPI().getAnonymousUser())) {
         List<String> list = (List<String>) req.getSession().getAttribute(WebKeys.IMAGE_TOOL_CLIPBOARD);
         if (list == null) {
